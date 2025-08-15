@@ -34,6 +34,35 @@ export const libraryRouter = createTRPCRouter({
     return allLibraries;
   }),
 
+  delete: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const { id } = input;
+
+      const existingLibrary = await ctx.db.library.findFirst({
+        where: {
+          id,
+          userId: ctx.session.user.id,
+        },
+      });
+
+      if (!existingLibrary) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "This library doesn't exist",
+        });
+      }
+
+      const deletedPost = await ctx.db.library.deleteMany({
+        where: {
+          id,
+          userId: ctx.session.user.id,
+        },
+      });
+
+      return deletedPost;
+    }),
+
   update: protectedProcedure
     .input(
       z.object({
