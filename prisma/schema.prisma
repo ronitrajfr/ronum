@@ -14,17 +14,32 @@ datasource db {
     url      = env("DATABASE_URL")
 }
 
-model researchPaper {
-    id          String  @id @default(cuid())
+model ResearchPaper {
+    id          String   @id @default(cuid())
     url         String
     name        String?
     author      String?
     colorScheme String?
-    folderId    String
+    libraryId   String
+    library     Library  @relation(fields: [libraryId], references: [id], onDelete: Cascade)
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @updatedAt
 
     @@index([name])
     @@index([author])
-    @@index([folderId])
+    @@index([libraryId])
+}
+
+model Library {
+    id            String          @id @default(cuid())
+    name          String
+    userId        String
+    user          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+    researchPaper ResearchPaper[]
+    createdAt     DateTime        @default(now())
+    updatedAt     DateTime        @updatedAt
+
+    @@index([name])
 }
 
 // Necessary for Next auth
@@ -63,6 +78,7 @@ model User {
     image         String?
     accounts      Account[]
     sessions      Session[]
+    library       Library[]
 }
 
 model VerificationToken {
