@@ -24,11 +24,12 @@ export function Sidebar() {
     createLibrary.mutate({
       name: "undefined",
       colorScheme: "#715A5A",
+      description: "Description for this library",
     });
   };
 
   return (
-    <div className="flex h-full w-64 flex-col bg-stone-200 p-4">
+    <div className="flex h-full w-64 flex-col border-r-2 border-stone-300 bg-stone-200 p-4">
       {/* Static menu */}
       <div className="space-y-3">
         <div className="cursor-pointer text-sm font-medium text-stone-600 hover:text-stone-800">
@@ -54,7 +55,7 @@ export function Sidebar() {
             <div
               className={cn("h-2 w-2 rounded-full", `bg-[${lib.colorScheme}]`)}
             ></div>
-            <Link href={`${lib.id}`}>{lib.name}</Link>
+            <Link href={`/dashboard/${lib.id}`}>{lib.name}</Link>
           </div>
         ))}
 

@@ -33,6 +33,7 @@ model ResearchPaper {
 model Library {
     id            String          @id @default(cuid())
     name          String
+    description   String?
     colorScheme   String?
     userId        String
     user          User            @relation(fields: [userId], references: [id], onDelete: Cascade)

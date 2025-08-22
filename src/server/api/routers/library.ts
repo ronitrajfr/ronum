@@ -3,20 +3,48 @@ import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 import { TRPCError } from "@trpc/server";
 
 export const libraryRouter = createTRPCRouter({
+  getLibraryById: protectedProcedure
+    .input(
+      z.object({
+        id: z.string(),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      const { id } = input;
+
+      const libraryDetails = await ctx.db.library.findFirst({
+        where: {
+          id,
+          userId: ctx.session.user.id,
+        },
+      });
+
+      if (!libraryDetails) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "This library doesn't exist",
+        });
+      }
+
+      return libraryDetails;
+    }),
+
   create: protectedProcedure
     .input(
       z.object({
         name: z.string(),
         colorScheme: z.string(),
+        description: z.string(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const { name, colorScheme } = input;
+      const { name, colorScheme, description } = input;
 
       const newLibrary = await ctx.db.library.create({
         data: {
           name,
           colorScheme,
+          description,
           user: { connect: { id: ctx.session.user.id } },
         },
       });
@@ -69,10 +97,11 @@ export const libraryRouter = createTRPCRouter({
         id: z.string(),
         name: z.string().optional(),
         colorScheme: z.string().optional(),
+        description: z.string().optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const { id, name, colorScheme } = input;
+      const { id, name, colorScheme, description } = input;
 
       const existingLibrary = await ctx.db.library.findFirst({
         where: {
@@ -93,6 +122,7 @@ export const libraryRouter = createTRPCRouter({
         data: {
           ...(name && { name }),
           ...(colorScheme && { colorScheme }),
+          ...(description && { description }),
         },
       });
 
