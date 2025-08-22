@@ -2,9 +2,30 @@
 
 import { Diamond, Trash2 } from "lucide-react";
 import { api } from "@/trpc/react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { cn } from "@/lib/utils";
 
 export function Sidebar() {
+  const router = useRouter();
   const { data: allLibrary } = api.library.getAllLibraries.useQuery();
+
+  const createLibrary = api.library.create.useMutation({
+    onSuccess: async (data) => {
+      await utils.library.invalidate();
+      router.push(`${data.id}`);
+    },
+  });
+  const utils = api.useUtils();
+
+  const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+
+    createLibrary.mutate({
+      name: "undefined",
+      colorScheme: "#715A5A",
+    });
+  };
 
   return (
     <div className="flex h-full w-64 flex-col bg-stone-200 p-4">
@@ -30,14 +51,21 @@ export function Sidebar() {
             key={lib.id}
             className="flex cursor-pointer items-center gap-2 text-sm text-stone-600 hover:text-stone-800"
           >
-            <div className="h-1.5 w-1.5 rounded-full bg-stone-500"></div>
-            <span>{lib.name}</span>
+            <div
+              className={cn("h-2 w-2 rounded-full", `bg-[${lib.colorScheme}]`)}
+            ></div>
+            <Link href={`${lib.id}`}>{lib.name}</Link>
           </div>
         ))}
 
-        <div className="ml-2 cursor-pointer text-sm text-stone-600 hover:text-stone-800">
+        <button
+          onClick={(e) => {
+            handleClick(e);
+          }}
+          className="ml-2 cursor-pointer text-sm text-stone-600 hover:text-stone-800"
+        >
           New category +
-        </div>
+        </button>
       </div>
 
       {/* Bottom section */}
