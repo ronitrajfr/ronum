@@ -26,10 +26,10 @@ const LibraryHeader = ({
   const utils = api.useUtils();
 
   const updateLibrary = api.library.update.useMutation({
-    onSuccess: () => {
+    onSuccess: async () => {
       toast("Updated sucessfully :3", {});
       setIsEditing(false);
-      utils.library.invalidate();
+      await utils.library.invalidate();
     },
     onError: (error) => {
       toast("Failed to update :(", {
@@ -68,7 +68,7 @@ const LibraryHeader = ({
           onCancel={handleCancel}
         />
       </div>
-      <div className="p-6">
+      <div className="px-6 pb-6">
         <p className="text-muted-foreground">Your content goes here...</p>
       </div>
     </main>
