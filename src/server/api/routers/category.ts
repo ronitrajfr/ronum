@@ -54,4 +54,41 @@ export const categoryRouter = createTRPCRouter({
         });
       }
     }),
+
+  deleteCategory: protectedProcedure
+    .input(
+      z.object({
+        categoryId: z.string(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const headersList = await headers();
+      const ip = getIp(headersList);
+      const { success } = await postRateLimit.limit(ip);
+
+      if (!success) {
+        throw new TRPCError({
+          code: "TOO_MANY_REQUESTS",
+          message: "Too many requests",
+        });
+      }
+      const { categoryId } = input;
+
+      try {
+        const deletedCategory = await ctx.db.category.delete({
+          where: {
+            id: categoryId,
+            userId: ctx.session.user.id,
+          },
+        });
+
+        return "successfully deleted";
+      } catch (error) {
+        console.error(error);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "An unexpected error occurred, please try again later.",
+        });
+      }
+    }),
 });
