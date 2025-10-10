@@ -24,6 +24,8 @@ export const categoryRouter = createTRPCRouter({
     )
     .mutation(async ({ ctx, input }) => {
       const headersList = await headers();
+      const cachedKey = `category:${ctx.session.user.id}`;
+
       const ip = getIp(headersList);
       const { success } = await postRateLimit.limit(ip);
 
@@ -45,6 +47,8 @@ export const categoryRouter = createTRPCRouter({
           },
         });
 
+        await redis.del(cachedKey);
+
         return newCategory;
       } catch (error) {
         console.error(error);
@@ -63,6 +67,8 @@ export const categoryRouter = createTRPCRouter({
     )
     .mutation(async ({ ctx, input }) => {
       const headersList = await headers();
+      const cachedKey = `category:${ctx.session.user.id}`;
+
       const ip = getIp(headersList);
       const { success } = await postRateLimit.limit(ip);
 
@@ -75,12 +81,14 @@ export const categoryRouter = createTRPCRouter({
       const { categoryId } = input;
 
       try {
-        const deletedCategory = await ctx.db.category.delete({
+        const deletedCategory = await ctx.db.category.deleteMany({
           where: {
             id: categoryId,
             userId: ctx.session.user.id,
           },
         });
+
+        await redis.del(cachedKey);
 
         return "successfully deleted";
       } catch (error) {
@@ -91,4 +99,36 @@ export const categoryRouter = createTRPCRouter({
         });
       }
     }),
+
+  getAllCategory: protectedProcedure.query(async ({ ctx }) => {
+    try {
+      const cachedKey = `category:${ctx.session.user.id}`;
+
+      const cachedData: string | null = await redis.get(cachedKey);
+
+      if (cachedData) {
+        try {
+          return JSON.parse(cachedData);
+        } catch {
+          await redis.del(cachedKey);
+        }
+      }
+
+      const allPosts = await ctx.db.category.findMany({
+        where: {
+          userId: ctx.session.user.id,
+        },
+      });
+
+      await redis.set(cachedKey, JSON.stringify(allPosts), { ex: 300 });
+
+      return allPosts;
+    } catch (error) {
+      console.error(error);
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "An unexpected error occurred, please try again later.",
+      });
+    }
+  }),
 });
