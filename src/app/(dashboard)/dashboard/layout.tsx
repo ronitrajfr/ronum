@@ -5,7 +5,7 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body>
+      <body className="bg-stone-200">
         <div className="flex h-screen">
           <Sidebar />
           {children}

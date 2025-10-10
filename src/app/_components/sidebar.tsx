@@ -106,16 +106,19 @@ export function Sidebar() {
                 <DropdownMenuTrigger asChild>
                   <button
                     aria-label="More options"
-                    className="p-1 text-stone-600 hover:text-stone-800"
+                    className="p-1 text-stone-600 hover:cursor-pointer hover:text-stone-800"
                   >
                     <Ellipsis size={18} />
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="center" className="w-40">
+                <DropdownMenuContent
+                  align="center"
+                  className="w-40 hover:cursor-pointer"
+                >
                   <DropdownMenuItem
                     onClick={() => handleDelete(category.id)}
                     disabled={deleteCategory.isPending}
-                    className="text-red-600 focus:text-red-700"
+                    className="text-red-600 hover:cursor-pointer focus:text-red-700"
                   >
                     <Trash2 className="mr-2 h-4 w-4" />
                     {deleteCategory.isPending ? "Deleting..." : "Delete"}

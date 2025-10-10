@@ -131,4 +131,46 @@ export const categoryRouter = createTRPCRouter({
       });
     }
   }),
+
+  getCategoryInfoById: protectedProcedure
+    .input(
+      z.object({
+        categoryId: z.string(),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      const { categoryId } = input;
+      const cachedKey = `user:${ctx.session.user.id}:${categoryId}`;
+
+      try {
+        const cachedData: string | null = await redis.get(cachedKey);
+
+        if (cachedData) {
+          try {
+            return JSON.parse(cachedData);
+          } catch {
+            await redis.del(cachedKey);
+          }
+        }
+
+        const categoryInfo = await ctx.db.category.findFirst({
+          where: {
+            id: categoryId,
+            userId: ctx.session.user.id,
+          },
+          include: {
+            paper: true,
+          },
+        });
+
+        await redis.set(cachedKey, JSON.stringify(categoryInfo));
+        return categoryInfo;
+      } catch (error) {
+        console.error(error);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "An unexpected error occurred, please try again later.",
+        });
+      }
+    }),
 });
