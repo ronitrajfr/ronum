@@ -173,4 +173,48 @@ export const categoryRouter = createTRPCRouter({
         });
       }
     }),
+
+  updateCategory: protectedProcedure
+    .input(
+      z.object({
+        categoryId: z.string(),
+        name: z.string().optional(),
+        description: z.string().optional(),
+        colorScheme: z.string().optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { categoryId, ...data } = input;
+
+      try {
+        const headersList = await headers();
+        const ip = getIp(headersList);
+        const { success } = await postRateLimit.limit(ip);
+
+        if (!success) {
+          throw new TRPCError({
+            code: "TOO_MANY_REQUESTS",
+            message: "Too many requests",
+          });
+        }
+        const filteredData = Object.fromEntries(
+          Object.entries(data).filter(([_, value]) => value !== undefined),
+        );
+        const updatedData = await ctx.db.category.update({
+          where: {
+            id: categoryId,
+            userId: ctx.session.user.id,
+          },
+          data: filteredData,
+        });
+
+        return updatedData;
+      } catch (error) {
+        console.error(error);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "An unexpected error occurred, please try again later.",
+        });
+      }
+    }),
 });

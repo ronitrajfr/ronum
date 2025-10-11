@@ -29,7 +29,7 @@ export function Sidebar() {
     isError,
   } = api.category.getAllCategory.useQuery();
 
-  console.log("Is fetching:", isFetching); // should be false for cached data
+  console.log("Is fetching:", isFetching);
 
   const createCategory = api.category.create.useMutation({
     onSuccess: async (data) => {
@@ -96,7 +96,7 @@ export function Sidebar() {
                 <span className="truncate">{category.name}</span>
               </Link>
 
-              {/* Dropdown Menu */}
+              {/*---------- Dropdown Menu ---------- */}
               <DropdownMenu
                 open={openDropdown === category.id}
                 onOpenChange={(open) =>

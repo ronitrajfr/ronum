@@ -3,6 +3,7 @@ import Providers from "./_components/Provider";
 import { type Metadata } from "next";
 import { Geist } from "next/font/google";
 import { TRPCReactProvider } from "@/trpc/react";
+import { ToastContainer } from "react-toastify";
 
 export const metadata: Metadata = {
   title: "Create T3 App",
@@ -22,7 +23,21 @@ export default function RootLayout({
     <html lang="en" className={`${geist.variable}`}>
       <Providers>
         <body>
-          <TRPCReactProvider>{children}</TRPCReactProvider>
+          <TRPCReactProvider>
+            {children}
+            <ToastContainer
+              position="bottom-right"
+              autoClose={3000}
+              hideProgressBar={false}
+              newestOnTop={false}
+              closeOnClick={false}
+              rtl={false}
+              pauseOnFocusLoss
+              draggable
+              pauseOnHover
+              theme="colored"
+            />
+          </TRPCReactProvider>
         </body>
       </Providers>
     </html>
