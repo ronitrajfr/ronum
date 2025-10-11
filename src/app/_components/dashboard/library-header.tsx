@@ -1,6 +1,7 @@
 "use client";
-import React, { type MouseEvent } from "react";
+import React, { useState, type FormEvent, type MouseEvent } from "react";
 import { PlusCircle, Pencil } from "lucide-react";
+import { api } from "@/trpc/react";
 import {
   Dialog,
   DialogContent,
@@ -14,14 +15,28 @@ import { UploadDropzone } from "@/utils/uploadthing";
 const LibraryHeader = ({
   name,
   description,
+  id,
 }: {
   name: string | undefined;
   description: string | undefined | null;
+  id: string;
 }) => {
-  function handleClick(e: MouseEvent<HTMLButtonElement>) {
+  const utils = api.useUtils();
+  const [url, setUrl] = useState("");
+
+  const createPaper = api.paper.create.useMutation({
+    onSuccess: async () => {
+      await utils.paper.invalidate();
+    },
+  });
+  function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    console.log("Clicked!");
+    createPaper.mutate({
+      categoryId: id,
+      url,
+    });
   }
+
   return (
     <div className="space-y-3 border border-b-stone-600">
       <h1 className="text-4xl font-bold tracking-wide text-neutral-800">
@@ -42,9 +57,16 @@ const LibraryHeader = ({
                 the pdf which has no login required.
               </DialogDescription>
             </DialogHeader>
-            <form className="mx-3 grid grid-cols-4 space-x-3 border border-x-0 border-t-0 border-b-stone-500 pb-4">
+            <form
+              onSubmit={(e) => {
+                handleSubmit(e);
+              }}
+              className="mx-3 grid grid-cols-4 space-x-3 border border-x-0 border-t-0 border-b-stone-500 pb-4"
+            >
               <input
                 type="text"
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
                 className="col-span-3 rounded-lg border border-stone-300 pl-4 focus:border-stone-400 focus:ring-0 focus:outline-none"
                 placeholder="https://arxiv.org/pdf/2510.08564"
               />

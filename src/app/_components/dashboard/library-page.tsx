@@ -13,7 +13,11 @@ const Librarypage = ({ id }: { id: string }) => {
   return (
     <div className="mx-7 mt-7 flex-1">
       <div>
-        <LibraryHeader name={data?.name} description={data?.description} />
+        <LibraryHeader
+          id={id}
+          name={data?.name}
+          description={data?.description}
+        />
       </div>
     </div>
   );
