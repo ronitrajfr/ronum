@@ -20,7 +20,7 @@ import {
   CustomLayer,
   SelectionTooltip,
 } from "@anaralabs/lector";
-
+import { PDFSkeleton } from "./pdf-skeleton";
 import "pdfjs-dist/web/pdf_viewer.css";
 import { Button } from "./ui/button";
 
@@ -58,7 +58,11 @@ export default function PDFViewer({
     <Root
       source={url}
       className="h-[calc(100vh-40px)] w-full"
-      loader={<div className="p-4">Loading...</div>}
+      loader={
+        <div className="p-4">
+          <PDFSkeleton />
+        </div>
+      }
       zoomOptions={{
         minZoom: 0.5,
         maxZoom: 5,
