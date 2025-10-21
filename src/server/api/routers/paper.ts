@@ -35,14 +35,17 @@ export const paperRouter = createTRPCRouter({
         }
 
         const { categoryId, url } = input;
-        if (!url.startsWith("https://") || url.includes("localhost"))
+        if (!url.startsWith("https://"))
           throw new TRPCError({
             code: "BAD_REQUEST",
             message: "Only HTTPS URLs allowed",
           });
 
-        const res = await fetch(url);
-        if (!res.ok || !res.headers.get("content-type")?.includes("pdf")) {
+        const res = await fetch(url, { method: "HEAD" });
+        if (
+          !res.ok ||
+          !res.headers.get("content-type")?.includes("application/pdf")
+        ) {
           throw new Error("URL does not point to a valid PDF");
         }
         const arrayBuffer = await res.arrayBuffer();

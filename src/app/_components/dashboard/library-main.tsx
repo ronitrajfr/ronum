@@ -1,6 +1,7 @@
 import React from "react";
 import { type Paper } from "@/utils/types";
 import BookCard from "../book-card";
+import { openTabletViewWithData } from "@/utils/openTabletView";
 
 interface LibraryMainProps {
   data: Paper[];
@@ -18,9 +19,17 @@ const LibraryMain: React.FC<LibraryMainProps> = ({ data }) => {
       <div className="space justify-left mb-6 flex flex-wrap space-x-6">
         {data &&
           data.map((item) => (
-            <div key={item.id}>
+            <button
+              onClick={() => {
+                openTabletViewWithData(
+                  `${window.location.origin}/id?q=${encodeURIComponent(item.url)}`,
+                  item,
+                );
+              }}
+              key={item.id}
+            >
               <BookCard tone="accent" author={item.author} title={item.name} />
-            </div>
+            </button>
           ))}
       </div>
     </div>
