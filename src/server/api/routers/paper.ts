@@ -5,7 +5,7 @@ import { redis } from "@/lib/redis";
 import { getIp } from "@/lib/ip";
 import { headers } from "next/headers";
 import { TRPCError } from "@trpc/server";
-import { PDFDocument } from "pdf-lib";
+import { CombedTextLayoutError, PDFDocument } from "pdf-lib";
 
 const postRateLimit = new Ratelimit({
   redis,
@@ -74,6 +74,31 @@ export const paperRouter = createTRPCRouter({
         });
 
         return newPaper;
+      } catch (error) {
+        console.error(error);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "An unexpected error occurred, please try again later.",
+        });
+      }
+    }),
+
+  getPaper: protectedProcedure
+    .input(
+      z.object({
+        paperId: z.string(),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      try {
+        const getPaper = await ctx.db.paper.findFirst({
+          where: {
+            id: input.paperId,
+            userId: ctx.session.user.id,
+          },
+        });
+
+        return getPaper;
       } catch (error) {
         console.error(error);
         throw new TRPCError({

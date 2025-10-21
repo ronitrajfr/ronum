@@ -43,7 +43,15 @@ GlobalWorkerOptions.workerSrc = new URL(
   import.meta.url,
 ).toString();
 
-export default function PDFViewer({ url }: { url: string }) {
+export default function PDFViewer({
+  url,
+  colorScheme,
+  docId,
+}: {
+  url: string;
+  colorScheme?: string;
+  docId: string;
+}) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
@@ -58,7 +66,7 @@ export default function PDFViewer({ url }: { url: string }) {
       isZoomFitWidth
     >
       <div
-        className={`bg-background absolute top-[40px] z-10 h-[calc(100vh-40px)] transform p-2 transition-all duration-300 ease-in-out ${
+        className={`bg-[${colorScheme}] absolute top-[40px] z-10 h-[calc(100vh-40px)] transform p-2 transition-all duration-300 ease-in-out ${
           sidebarOpen
             ? "visible translate-x-0 opacity-100"
             : "invisible -translate-x-full opacity-0"
@@ -88,7 +96,7 @@ export default function PDFViewer({ url }: { url: string }) {
           <ZoomIn className="cursor-pointer px-3 py-1">
             <ZoomInIcon size={15} />
           </ZoomIn>
-          <PageNavigationButtons />
+          <PageNavigationButtons docId={docId} />
         </div>
       </div>
       <HighlightLayerContent />
@@ -96,11 +104,36 @@ export default function PDFViewer({ url }: { url: string }) {
   );
 }
 
-const PageNavigationButtons = () => {
+const PageNavigationButtons = ({ docId }: { docId: string }) => {
   const pages = usePdf((state) => state.pdfDocumentProxy?.numPages);
   const currentPage = usePdf((state) => state.currentPage);
-  const [pageNumber, setPageNumber] = useState<string | number>(currentPage);
+  console.log(currentPage);
+  const [pageNumber, setPageNumber] = useState<number | string>(currentPage);
   const { jumpToPage } = usePdfJump();
+
+  const docKey = `pdf-current-page-${docId}`;
+
+  const [debouncedPage] = useDebounce(pageNumber, 500);
+
+  const pageToSave = Number(debouncedPage);
+
+  useEffect(() => {
+    const lastPage = localStorage.getItem(docKey);
+    if (lastPage) {
+      const page = Number(lastPage);
+      if (!isNaN(page) && page >= 1 && page <= pages) {
+        jumpToPage(page, { behavior: "auto" });
+        setPageNumber(page);
+      }
+    }
+  }, [pages, docKey]);
+
+  // Save debounced page number to localStorage
+  useEffect(() => {
+    if (pageToSave >= 1 && pageToSave <= pages) {
+      localStorage.setItem(docKey, String(pageToSave));
+    }
+  }, [debouncedPage, pages, docKey]);
 
   const handlePreviousPage = () => {
     if (currentPage > 1) {

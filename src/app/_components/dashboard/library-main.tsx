@@ -22,7 +22,7 @@ const LibraryMain: React.FC<LibraryMainProps> = ({ data }) => {
             <button
               onClick={() => {
                 openTabletViewWithData(
-                  `${window.location.origin}/id?q=${encodeURIComponent(item.url)}`,
+                  `${window.location.origin}/id?id=${item.id}`,
                   item,
                 );
               }}
