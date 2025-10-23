@@ -52,7 +52,7 @@ export const paperRouter = createTRPCRouter({
         const maxSize = 8 * 1024 * 1024; // 8 MB
         if (arrayBuffer.byteLength > maxSize) {
           throw new TRPCError({
-            code: "BAD_REQUEST",
+            code: "PAYLOAD_TOO_LARGE",
             message: "PDF too large (max 8MB)",
           });
         }
@@ -99,6 +99,96 @@ export const paperRouter = createTRPCRouter({
         });
 
         return getPaper;
+      } catch (error) {
+        console.error(error);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "An unexpected error occurred, please try again later.",
+        });
+      }
+    }),
+
+  updatePaper: protectedProcedure
+    .input(
+      z.object({
+        paperId: z.string(),
+        name: z.string().optional(),
+        author: z.string().optional(),
+        colorScheme: z.string().optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      try {
+        const headersList = await headers();
+        const ip = getIp(headersList);
+        const { success } = await postRateLimit.limit(ip);
+
+        if (!success) {
+          throw new TRPCError({
+            code: "TOO_MANY_REQUESTS",
+            message: "Too many requests",
+          });
+        }
+
+        const { paperId, ...data } = input;
+
+        const filteredData = Object.fromEntries(
+          Object.entries(data).filter(([_, value]) => value !== undefined),
+        );
+
+        const updatedData = await ctx.db.paper.update({
+          where: {
+            id: paperId,
+            userId: ctx.session.user.id,
+          },
+          data: filteredData,
+        });
+
+        return updatedData;
+      } catch (error) {
+        console.error(error);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "An unexpected error occurred, please try again later.",
+        });
+      }
+    }),
+
+  deletePaper: protectedProcedure
+    .input(
+      z.object({
+        paperId: z.string(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      try {
+        const headersList = await headers();
+        const ip = getIp(headersList);
+        const { success } = await postRateLimit.limit(ip);
+
+        if (!success) {
+          throw new TRPCError({
+            code: "TOO_MANY_REQUESTS",
+            message: "Too many requests",
+          });
+        }
+
+        try {
+          const deletedPaper = await ctx.db.paper.delete({
+            where: {
+              id: input.paperId,
+              userId: ctx.session.user.id,
+            },
+          });
+
+          return true;
+        } catch (error) {
+          console.error(error);
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Record not found.",
+          });
+        }
       } catch (error) {
         console.error(error);
         throw new TRPCError({
