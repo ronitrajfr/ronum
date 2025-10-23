@@ -4,13 +4,11 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className="bg-stone-200">
-        <div className="flex h-screen">
-          <Sidebar />
-          {children}
-        </div>
-      </body>
-    </html>
+    <div className="bg-stone-200">
+      <div className="flex h-screen">
+        <Sidebar />
+        {children}
+      </div>
+    </div>
   );
 }
