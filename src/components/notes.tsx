@@ -6,9 +6,10 @@ import {
   useEffect,
   useCallback,
   useRef,
+  useMemo,
 } from "react";
 import { useSession } from "next-auth/react";
-import { useEditor, EditorContent, Editor } from "@tiptap/react";
+import { useEditor, EditorContent, type Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Image from "@tiptap/extension-image";
 import {
@@ -28,60 +29,90 @@ import {
   Minus,
   Undo,
   Redo,
-  Image as ImageIcon,
+  ImageIcon,
   X,
   Save,
 } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/trpc/react";
 
-export default function Notes({
-  serverNotes,
-  uuid,
-}: {
-  serverNotes: any;
+type TiptapContent = Record<string, unknown>;
+
+interface NotesProps {
+  serverNotes: unknown;
   uuid: string;
-}) {
-  const [notes, setNotes] = useState("");
+}
+
+export default function Notes({ serverNotes, uuid }: NotesProps) {
+  const [notes, setNotes] = useState<TiptapContent | null>(null);
   const [saving, setSaving] = useState(false);
+  const [isClient, setIsClient] = useState(false);
   const { data: session } = useSession();
+
+  const parsedServerNotes = useMemo(() => {
+    if (!serverNotes) return null;
+    if (typeof serverNotes === "string") {
+      try {
+        return JSON.parse(serverNotes) as TiptapContent;
+      } catch {
+        console.error("Failed to parse server notes");
+        return null;
+      }
+    }
+    return serverNotes as TiptapContent;
+  }, [serverNotes]);
 
   const editor = useEditor({
     extensions: [
-      StarterKit,
+      StarterKit.configure({
+        heading: {
+          levels: [1, 2, 3, 4, 5, 6],
+        },
+      }),
       Image.configure({
         inline: true,
         allowBase64: false,
       }),
     ],
-    content: serverNotes,
+    content: parsedServerNotes,
     immediatelyRender: false,
     onUpdate({ editor }) {
-      setNotes(editor.getHTML());
+      setNotes(editor.getJSON() as TiptapContent);
     },
     editorProps: {
       attributes: {
         class:
-          "prose prose-sm sm:prose lg:prose-lg xl:prose-2xl h-full w-full focus:outline-none flex-grow min-h-full",
+          "prose prose-sm sm:prose lg:prose-lg xl:prose-2xl h-full w-full focus:outline-none flex-grow min-h-full dark:prose-invert prose-headings:font-bold prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl",
         style: "min-height: 100%;",
       },
     },
   });
 
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
   const upsertNoteMutation = api.paper.upsertNote.useMutation();
 
   const saveNotes = useCallback(async () => {
-    if (saving) return;
+    if (saving || !editor) return;
 
     setSaving(true);
     try {
+      const content = editor.getJSON();
+      if (!isValidTiptapContent(content)) {
+        toast.error("Invalid note content");
+        setSaving(false);
+        return;
+      }
+
       await upsertNoteMutation.mutateAsync({
         paperId: uuid,
-        content: editor?.getJSON(),
+        content,
       });
       toast.success("Notes saved successfully");
     } catch (err) {
-      console.error(err);
+      console.error("[v0] Error saving notes:", err);
       toast.error("Couldn't save notes");
     } finally {
       setSaving(false);
@@ -94,7 +125,6 @@ export default function Notes({
   // Track focus state of the notes section
   useEffect(() => {
     const checkFocus = () => {
-      // Check if the editor or any of its children has focus
       if (!notesContainerRef.current) return;
 
       const editorHasFocus = editor?.isFocused;
@@ -105,7 +135,6 @@ export default function Notes({
       setIsNotesFocused(editorHasFocus || containerHasFocus);
     };
 
-    // Set up event listeners for focus tracking
     document.addEventListener("focusin", checkFocus);
     document.addEventListener("focusout", checkFocus);
     document.addEventListener("click", checkFocus);
@@ -121,7 +150,7 @@ export default function Notes({
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (isNotesFocused && (e.ctrlKey || e.metaKey) && e.key === "s") {
-        e.preventDefault(); // Prevent browser's save dialog
+        e.preventDefault();
         saveNotes();
       }
     };
@@ -132,6 +161,15 @@ export default function Notes({
       document.removeEventListener("keydown", handleKeyDown);
     };
   }, [saveNotes, isNotesFocused]);
+
+  if (!isClient || !editor) {
+    return (
+      <div className="text-editor unreset flex h-screen w-full flex-col gap-2 border-2 p-2">
+        <div className="bg-muted h-10 animate-pulse rounded" />
+        <div className="bg-muted flex-grow animate-pulse rounded" />
+      </div>
+    );
+  }
 
   return (
     <div
@@ -151,26 +189,26 @@ export default function Notes({
 }
 
 type MenuBarProps = {
-  editor: Editor | null;
+  editor: Editor;
   saveNotesFunc: MouseEventHandler<HTMLButtonElement>;
   saving: boolean;
 };
 
 function MenuBar({ editor, saveNotesFunc, saving }: MenuBarProps) {
-  if (!editor) {
-    return null;
-  }
-
   return (
     <div className="flex flex-row flex-wrap gap-3 border-b-2 pb-3">
       <button
-        onClick={() => editor.chain().focus().toggleBold().run()}
+        onClick={() => {
+          const result = editor.chain().focus().toggleBold().run();
+          console.log("[v0] Bold command result:", result);
+        }}
         className={
           editor.isActive("bold")
             ? "active-menu-item menu-item cursor-pointer"
             : "non-active-menu-item menu-item cursor-pointer"
         }
         title="Bold"
+        aria-label="Toggle bold"
       >
         <Bold size={20} />
       </button>
@@ -182,6 +220,7 @@ function MenuBar({ editor, saveNotesFunc, saving }: MenuBarProps) {
             : "non-active-menu-item menu-item cursor-pointer"
         }
         title="Italic"
+        aria-label="Toggle italic"
       >
         <Italic size={20} />
       </button>
@@ -193,39 +232,69 @@ function MenuBar({ editor, saveNotesFunc, saving }: MenuBarProps) {
             : "non-active-menu-item menu-item cursor-pointer"
         }
         title="Strikethrough"
+        aria-label="Toggle strikethrough"
       >
         <Strikethrough size={20} />
       </button>
       <button
-        onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
+        onClick={() => {
+          const result = editor
+            .chain()
+            .focus()
+            .toggleHeading({ level: 1 })
+            .run();
+          console.log(
+            "[v0] H1 command result:",
+            result,
+            "Editor state:",
+            editor.isActive("heading", { level: 1 }),
+          );
+        }}
         className={
           editor.isActive("heading", { level: 1 })
             ? "active-menu-item menu-item cursor-pointer"
             : "non-active-menu-item menu-item cursor-pointer"
         }
         title="Heading 1"
+        aria-label="Toggle heading 1"
       >
         <Heading1 size={20} />
       </button>
       <button
-        onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+        onClick={() => {
+          const result = editor
+            .chain()
+            .focus()
+            .toggleHeading({ level: 2 })
+            .run();
+          console.log("[v0] H2 command result:", result);
+        }}
         className={
           editor.isActive("heading", { level: 2 })
             ? "active-menu-item menu-item cursor-pointer"
             : "non-active-menu-item menu-item cursor-pointer"
         }
         title="Heading 2"
+        aria-label="Toggle heading 2"
       >
         <Heading2 size={20} />
       </button>
       <button
-        onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
+        onClick={() => {
+          const result = editor
+            .chain()
+            .focus()
+            .toggleHeading({ level: 3 })
+            .run();
+          console.log("[v0] H3 command result:", result);
+        }}
         className={
           editor.isActive("heading", { level: 3 })
             ? "active-menu-item menu-item cursor-pointer"
             : "non-active-menu-item menu-item cursor-pointer"
         }
         title="Heading 3"
+        aria-label="Toggle heading 3"
       >
         <Heading3 size={20} />
       </button>
@@ -237,6 +306,7 @@ function MenuBar({ editor, saveNotesFunc, saving }: MenuBarProps) {
             : "non-active-menu-item menu-item cursor-pointer"
         }
         title="Inline Code"
+        aria-label="Toggle inline code"
       >
         <Code size={20} />
       </button>
@@ -248,6 +318,7 @@ function MenuBar({ editor, saveNotesFunc, saving }: MenuBarProps) {
             : "non-active-menu-item menu-item cursor-pointer"
         }
         title="Code Block"
+        aria-label="Toggle code block"
       >
         <CodeSquare size={20} />
       </button>
@@ -259,6 +330,7 @@ function MenuBar({ editor, saveNotesFunc, saving }: MenuBarProps) {
             : "non-active-menu-item menu-item cursor-pointer"
         }
         title="Paragraph"
+        aria-label="Set paragraph"
       >
         <Pilcrow size={20} />
       </button>
@@ -270,6 +342,7 @@ function MenuBar({ editor, saveNotesFunc, saving }: MenuBarProps) {
             : "non-active-menu-item menu-item cursor-pointer"
         }
         title="Bullet List"
+        aria-label="Toggle bullet list"
       >
         <List size={20} />
       </button>
@@ -281,6 +354,7 @@ function MenuBar({ editor, saveNotesFunc, saving }: MenuBarProps) {
             : "non-active-menu-item menu-item cursor-pointer"
         }
         title="Ordered List"
+        aria-label="Toggle ordered list"
       >
         <ListOrdered size={20} />
       </button>
@@ -292,6 +366,7 @@ function MenuBar({ editor, saveNotesFunc, saving }: MenuBarProps) {
             : "non-active-menu-item menu-item cursor-pointer"
         }
         title="Blockquote"
+        aria-label="Toggle blockquote"
       >
         <Quote size={20} />
       </button>
@@ -299,6 +374,7 @@ function MenuBar({ editor, saveNotesFunc, saving }: MenuBarProps) {
         onClick={() => editor.chain().focus().setHorizontalRule().run()}
         title="Horizontal Rule"
         className="menu-item cursor-pointer"
+        aria-label="Insert horizontal rule"
       >
         <Minus size={20} />
       </button>
@@ -306,6 +382,7 @@ function MenuBar({ editor, saveNotesFunc, saving }: MenuBarProps) {
         onClick={() => editor.chain().focus().undo().run()}
         title="Undo"
         className="menu-item cursor-pointer"
+        aria-label="Undo"
       >
         <Undo size={20} />
       </button>
@@ -313,18 +390,22 @@ function MenuBar({ editor, saveNotesFunc, saving }: MenuBarProps) {
         onClick={() => editor.chain().focus().redo().run()}
         title="Redo"
         className="menu-item cursor-pointer"
+        aria-label="Redo"
       >
         <Redo size={20} />
       </button>
       <button
         onClick={() => {
           const url = window.prompt("Enter the URL of the image:");
-          if (url) {
+          if (url && isValidImageUrl(url)) {
             editor.chain().focus().setImage({ src: url }).run();
+          } else if (url) {
+            toast.error("Invalid image URL. Must be HTTPS.");
           }
         }}
         title="Insert Image"
         className="menu-item cursor-pointer"
+        aria-label="Insert image"
       >
         <ImageIcon size={20} />
       </button>
@@ -332,6 +413,7 @@ function MenuBar({ editor, saveNotesFunc, saving }: MenuBarProps) {
         onClick={() => editor.chain().focus().unsetAllMarks().run()}
         title="Remove Formatting"
         className="menu-item cursor-pointer"
+        aria-label="Remove formatting"
       >
         <RemoveFormatting size={20} />
       </button>
@@ -339,6 +421,7 @@ function MenuBar({ editor, saveNotesFunc, saving }: MenuBarProps) {
         onClick={() => editor.chain().focus().clearNodes().run()}
         title="Clear Nodes"
         className="menu-item cursor-pointer"
+        aria-label="Clear nodes"
       >
         <X size={20} />
       </button>
@@ -347,9 +430,41 @@ function MenuBar({ editor, saveNotesFunc, saving }: MenuBarProps) {
         onClick={saveNotesFunc}
         title="Save"
         className="menu-item cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+        aria-label="Save notes"
       >
         <Save size={20} />
       </button>
     </div>
   );
+}
+
+function isValidImageUrl(url: string): boolean {
+  try {
+    const urlObj = new URL(url);
+    if (urlObj.protocol !== "https:") {
+      return false;
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function isValidTiptapContent(content: unknown): boolean {
+  if (!content || typeof content !== "object") {
+    return false;
+  }
+
+  const obj = content as Record<string, unknown>;
+
+  if (typeof obj.type !== "string") {
+    return false;
+  }
+
+  const contentString = JSON.stringify(content);
+  if (contentString.length > 1000000) {
+    return false;
+  }
+
+  return true;
 }
