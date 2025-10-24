@@ -36,6 +36,7 @@ import {
   PencilIcon,
   EraserIcon,
   HighlighterIcon,
+  NotebookText,
 } from "lucide-react";
 
 GlobalWorkerOptions.workerSrc = new URL(

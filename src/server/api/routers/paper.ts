@@ -96,6 +96,9 @@ export const paperRouter = createTRPCRouter({
             id: input.paperId,
             userId: ctx.session.user.id,
           },
+          include: {
+            notes: true,
+          },
         });
 
         return getPaper;
@@ -104,6 +107,39 @@ export const paperRouter = createTRPCRouter({
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "An unexpected error occurred, please try again later.",
+        });
+      }
+    }),
+
+  upsertNote: protectedProcedure
+    .input(
+      z.object({
+        paperId: z.string(),
+        content: z.any(), // Tiptap JSON
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      try {
+        // Only allow one note per paper per user for now
+        const existing = await ctx.db.notes.findFirst({
+          where: { paperId: input.paperId },
+        });
+
+        if (existing) {
+          return ctx.db.notes.update({
+            where: { id: existing.id },
+            data: { content: input.content },
+          });
+        }
+
+        return ctx.db.notes.create({
+          data: { paperId: input.paperId, content: input.content },
+        });
+      } catch (error) {
+        console.error(error);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Could not save note",
         });
       }
     }),
