@@ -62,7 +62,7 @@ const LibraryHeader = ({
         <p className="text-lg text-neutral-500">{description}</p>
         <div className="flex space-x-3">
           <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger className="flex items-center gap-2 rounded-xl bg-stone-300 px-4 py-2 font-semibold text-stone-500 transition-transform duration-200 hover:scale-105 hover:cursor-pointer">
+            <DialogTrigger className="flex items-center gap-2 rounded-xl bg-[#f3f4f6] px-4 py-2 font-semibold text-gray-800 transition-transform duration-200 hover:scale-105 hover:cursor-pointer hover:bg-[#e5e7eb]">
               <p>Add book</p>
               <PlusCircle size={15} />
             </DialogTrigger>
@@ -115,7 +115,7 @@ const LibraryHeader = ({
             </DialogContent>
           </Dialog>
 
-          <button className="mb-0 flex items-center gap-2 rounded-xl bg-stone-300 px-4 py-2 font-semibold text-stone-500 transition-transform duration-200 hover:scale-105 hover:cursor-pointer">
+          <button className="mb-0 flex items-center gap-2 rounded-xl bg-[#f3f4f6] px-4 py-2 font-semibold text-gray-800 transition-transform duration-200 hover:scale-105 hover:cursor-pointer hover:bg-[#e5e7eb]">
             <p>Edit</p>
             <Pencil size={15} />
           </button>

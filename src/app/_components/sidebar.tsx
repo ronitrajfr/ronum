@@ -59,7 +59,7 @@ export function Sidebar() {
   };
 
   return (
-    <aside className="flex h-full w-64 flex-col border-r-2 border-stone-300 bg-stone-200 p-4">
+    <aside className="flex h-full w-64 flex-col border-r-2 border-stone-300 p-4">
       {/* ---------- Static menu ---------- */}
       <nav className="space-y-3">
         {["Recent", "Reading list", "Discover"].map((item) => (

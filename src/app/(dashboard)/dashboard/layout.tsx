@@ -4,7 +4,7 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <div className="bg-stone-200">
+    <div className="">
       <div className="flex h-screen">
         <Sidebar />
         {children}

@@ -3,6 +3,7 @@ export interface Paper {
   name: string;
   url: string;
   author: string;
+  colorScheme: string;
   categoryId: string;
   createdAt: string;
   updatedAt: string;
