@@ -28,7 +28,9 @@ const LibraryHeader = ({
 
   const createPaper = api.paper.create.useMutation({
     onSuccess: async () => {
-      await utils.category.invalidate();
+      await utils.category.getCategoryInfoById.invalidate({ categoryId: id });
+      await utils.category.getCategoryInfoById.refetch({ categoryId: id });
+
       toast.success("Successfully saved!", {
         position: "bottom-right",
         autoClose: 3000,

@@ -140,19 +140,24 @@ export const categoryRouter = createTRPCRouter({
     )
     .query(async ({ ctx, input }) => {
       const { categoryId } = input;
-      const cachedKey = `user:${ctx.session.user.id}:${categoryId}`;
+      const cachedKey = `user:${ctx.session.user.id}:category:${categoryId}`;
 
       try {
-        const cachedData: string | null = await redis.get(cachedKey);
-
+        // 1️⃣ Try loading from Redis
+        const cachedData = await redis.get(cachedKey);
         if (cachedData) {
+          console.log("✅ Loaded category from cache");
           try {
-            return JSON.parse(cachedData);
-          } catch {
+            return JSON.parse(cachedData as string);
+          } catch (err) {
+            console.warn("⚠️ Invalid JSON in cache, clearing key:", cachedKey);
             await redis.del(cachedKey);
           }
         }
 
+        console.log("⚡ No cache, fetching from DB");
+
+        // 2️⃣ Fetch from DB
         const categoryInfo = await ctx.db.category.findFirst({
           where: {
             id: categoryId,
@@ -163,7 +168,9 @@ export const categoryRouter = createTRPCRouter({
           },
         });
 
-        await redis.set(cachedKey, JSON.stringify(categoryInfo));
+        // 3️⃣ Cache result for 5 minutes (300 sec)
+        await redis.set(cachedKey, JSON.stringify(categoryInfo), { ex: 300 });
+
         return categoryInfo;
       } catch (error) {
         console.error(error);
@@ -207,6 +214,9 @@ export const categoryRouter = createTRPCRouter({
           },
           data: filteredData,
         });
+
+        await redis.del(`category:${ctx.session.user.id}`);
+        await redis.del(`user:${ctx.session.user.id}:category:${categoryId}`);
 
         return updatedData;
       } catch (error) {

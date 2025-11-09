@@ -5,7 +5,7 @@ import { redis } from "@/lib/redis";
 import { getIp } from "@/lib/ip";
 import { headers } from "next/headers";
 import { TRPCError } from "@trpc/server";
-import { CombedTextLayoutError, PDFDocument } from "pdf-lib";
+import { PDFDocument } from "pdf-lib";
 
 const postRateLimit = new Ratelimit({
   redis,
@@ -41,7 +41,7 @@ export const paperRouter = createTRPCRouter({
             message: "Only HTTPS URLs allowed",
           });
 
-        const res = await fetch(url, { method: "HEAD" });
+        const res = await fetch(url);
         if (
           !res.ok ||
           !res.headers.get("content-type")?.includes("application/pdf")
@@ -49,7 +49,7 @@ export const paperRouter = createTRPCRouter({
           throw new Error("URL does not point to a valid PDF");
         }
         const arrayBuffer = await res.arrayBuffer();
-        const maxSize = 8 * 1024 * 1024; // 8 MB
+        const maxSize = 8 * 1024 * 1024;
         if (arrayBuffer.byteLength > maxSize) {
           throw new TRPCError({
             code: "PAYLOAD_TOO_LARGE",
@@ -72,6 +72,8 @@ export const paperRouter = createTRPCRouter({
             userId: ctx.session.user.id,
           },
         });
+
+        await redis.del(`user:${ctx.session.user.id}:category:${categoryId}`);
 
         return newPaper;
       } catch (error) {
@@ -115,26 +117,36 @@ export const paperRouter = createTRPCRouter({
     .input(
       z.object({
         paperId: z.string(),
-        content: z.any(), // Tiptap JSON
+        content: z.any(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
       try {
-        // Only allow one note per paper per user for now
         const existing = await ctx.db.notes.findFirst({
           where: { paperId: input.paperId },
         });
 
-        if (existing) {
-          return ctx.db.notes.update({
-            where: { id: existing.id },
-            data: { content: input.content },
-          });
+        const result = existing
+          ? await ctx.db.notes.update({
+              where: { id: existing.id },
+              data: { content: input.content },
+            })
+          : await ctx.db.notes.create({
+              data: { paperId: input.paperId, content: input.content },
+            });
+
+        const paper = await ctx.db.paper.findUnique({
+          where: { id: input.paperId },
+          select: { categoryId: true },
+        });
+
+        if (paper) {
+          await redis.del(
+            `user:${ctx.session.user.id}:category:${paper.categoryId}`,
+          );
         }
 
-        return ctx.db.notes.create({
-          data: { paperId: input.paperId, content: input.content },
-        });
+        return result;
       } catch (error) {
         console.error(error);
         throw new TRPCError({
@@ -180,6 +192,17 @@ export const paperRouter = createTRPCRouter({
           data: filteredData,
         });
 
+        const paper = await ctx.db.paper.findUnique({
+          where: { id: paperId },
+          select: { categoryId: true },
+        });
+
+        if (paper) {
+          await redis.del(
+            `user:${ctx.session.user.id}:category:${paper.categoryId}`,
+          );
+        }
+
         return updatedData;
       } catch (error) {
         console.error(error);
@@ -210,12 +233,23 @@ export const paperRouter = createTRPCRouter({
         }
 
         try {
+          const paper = await ctx.db.paper.findUnique({
+            where: { id: input.paperId },
+            select: { categoryId: true },
+          });
+
           const deletedPaper = await ctx.db.paper.delete({
             where: {
               id: input.paperId,
               userId: ctx.session.user.id,
             },
           });
+
+          if (paper) {
+            await redis.del(
+              `user:${ctx.session.user.id}:category:${paper.categoryId}`,
+            );
+          }
 
           return true;
         } catch (error) {
