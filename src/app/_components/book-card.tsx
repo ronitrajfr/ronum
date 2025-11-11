@@ -7,6 +7,7 @@ import { Edit2 } from "lucide-react";
 import ColorPickerModal from "./color-scheme-selector";
 
 type BookCardProps = {
+  paperId: string;
   title: string;
   author?: string;
   paperColor?: string;
@@ -29,6 +30,7 @@ const getSoftGradient = (color: string) => {
 export function BookCard({
   title,
   author,
+  paperId,
   paperColor = "#f3f4f6",
   ribbon = true,
   className,
@@ -49,6 +51,9 @@ export function BookCard({
           "focus-visible:ring-ring focus-visible:ring-offset-background rounded-lg focus-visible:ring-2 focus-visible:ring-offset-2",
           className,
         )}
+        onClick={(e) => {
+          window.location.href = `/reader/${paperId}`;
+        }}
         style={{ perspective: "1200px" }}
         tabIndex={0}
         {...props}
@@ -137,6 +142,7 @@ export function BookCard({
             {editable && (
               <button
                 onClick={(e) => {
+                  e.stopPropagation();
                   e.preventDefault();
                   setIsModalOpen(true);
                 }}
