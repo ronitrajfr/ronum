@@ -1,4 +1,5 @@
 "use client";
+
 import React, { useState, type FormEvent } from "react";
 import { PlusCircle, Pencil } from "lucide-react";
 import { api } from "@/trpc/react";
@@ -23,8 +24,12 @@ const LibraryHeader = ({
   id: string;
 }) => {
   const utils = api.useUtils();
+
   const [url, setUrl] = useState("");
   const [open, setOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [newName, setNewName] = useState(name || "");
+  const [newDescription, setNewDescription] = useState(description || "");
 
   const createPaper = api.paper.create.useMutation({
     onSuccess: async () => {
@@ -46,12 +51,33 @@ const LibraryHeader = ({
     },
   });
 
-  function handleSubmit(e: FormEvent<HTMLFormElement>) {
+  const updateCategory = api.category.updateCategory.useMutation({
+    onSuccess: async () => {
+      await utils.category.getCategoryInfoById.invalidate({ categoryId: id });
+      await utils.category.getAllCategory.invalidate();
+      toast.success("Category updated successfully!", { theme: "colored" });
+      setEditOpen(false);
+    },
+    onError: () => {
+      toast.error("Failed to update category", { theme: "colored" });
+    },
+  });
+
+  function handleAddBook(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (!url) return;
+    if (!url.trim()) return;
     createPaper.mutate({
       categoryId: id,
       url,
+    });
+  }
+
+  function handleEditSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    updateCategory.mutate({
+      categoryId: id,
+      name: newName.trim() || undefined,
+      description: newDescription.trim() || undefined,
     });
   }
 
@@ -62,22 +88,25 @@ const LibraryHeader = ({
           {name}
         </h1>
         <p className="text-lg text-neutral-500">{description}</p>
+
         <div className="flex space-x-3">
+          {/* ---------------- ADD BOOK DIALOG ---------------- */}
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger className="flex items-center gap-2 rounded-xl bg-[#f3f4f6] px-4 py-2 font-semibold text-gray-800 transition-transform duration-200 hover:scale-105 hover:cursor-pointer hover:bg-[#e5e7eb]">
               <p>Add book</p>
               <PlusCircle size={15} />
             </DialogTrigger>
+
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>Add Item to {name}</DialogTitle>
                 <DialogDescription>
-                  At the moment you can upload .pdf files directly or paste url
-                  of the pdf which has no login required.
+                  Upload a .pdf file or paste a public PDF URL.
                 </DialogDescription>
               </DialogHeader>
+
               <form
-                onSubmit={handleSubmit}
+                onSubmit={handleAddBook}
                 className="grid grid-cols-4 space-x-3 border border-x-0 border-t-0 border-b-stone-500 pb-4"
               >
                 <input
@@ -97,6 +126,7 @@ const LibraryHeader = ({
                   {createPaper.isPending ? "Adding..." : "Add link"}
                 </button>
               </form>
+
               <UploadDropzone
                 className="bg-stone-200"
                 appearance={{
@@ -104,7 +134,6 @@ const LibraryHeader = ({
                 }}
                 endpoint="imageUploader"
                 onClientUploadComplete={(res) => {
-                  console.log("Files: ", res[0]?.ufsUrl);
                   createPaper.mutate({
                     categoryId: id,
                     url: res[0]?.ufsUrl as string,
@@ -117,10 +146,50 @@ const LibraryHeader = ({
             </DialogContent>
           </Dialog>
 
-          <button className="mb-0 flex items-center gap-2 rounded-xl bg-[#f3f4f6] px-4 py-2 font-semibold text-gray-800 transition-transform duration-200 hover:scale-105 hover:cursor-pointer hover:bg-[#e5e7eb]">
-            <p>Edit</p>
-            <Pencil size={15} />
-          </button>
+          {/* ---------------- EDIT CATEGORY DIALOG ---------------- */}
+          <Dialog open={editOpen} onOpenChange={setEditOpen}>
+            <DialogTrigger className="mb-0 flex items-center gap-2 rounded-xl bg-[#f3f4f6] px-4 py-2 font-semibold text-gray-800 transition-transform duration-200 hover:scale-105 hover:cursor-pointer hover:bg-[#e5e7eb]">
+              <p>Edit</p>
+              <Pencil size={15} />
+            </DialogTrigger>
+
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Edit {name}</DialogTitle>
+                <DialogDescription>
+                  You can update the name or description of this category.
+                </DialogDescription>
+              </DialogHeader>
+
+              <form
+                onSubmit={handleEditSubmit}
+                className="flex flex-col gap-4 border-t border-stone-300 pt-4"
+              >
+                <input
+                  type="text"
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                  className="rounded-lg border border-stone-300 bg-stone-200 px-4 py-2 focus:border-stone-400 focus:ring-0 focus:outline-none"
+                  placeholder="Category name"
+                />
+                <textarea
+                  value={newDescription}
+                  onChange={(e) => setNewDescription(e.target.value)}
+                  className="rounded-lg border border-stone-300 bg-stone-200 px-4 py-2 focus:border-stone-400 focus:ring-0 focus:outline-none"
+                  placeholder="Category description"
+                />
+                <button
+                  type="submit"
+                  disabled={updateCategory.isPending}
+                  className={`cursor-pointer rounded-lg px-4 py-2 font-semibold text-white ${
+                    updateCategory.isPending ? "bg-gray-400" : "bg-blue-600"
+                  }`}
+                >
+                  {updateCategory.isPending ? "Saving..." : "Save changes"}
+                </button>
+              </form>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
     </div>

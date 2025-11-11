@@ -47,7 +47,7 @@ export function BookCard({
         role="article"
         aria-label={`Book: ${title} by ${author}`}
         className={cn(
-          "group relative inline-block outline-none",
+          "group relative inline-block cursor-pointer outline-none",
           "focus-visible:ring-ring focus-visible:ring-offset-background rounded-lg focus-visible:ring-2 focus-visible:ring-offset-2",
           className,
         )}
@@ -146,7 +146,7 @@ export function BookCard({
                   e.preventDefault();
                   setIsModalOpen(true);
                 }}
-                className="absolute bottom-3 left-1/2 z-20 -translate-x-1/2 transform rounded-full border border-slate-200 bg-white/95 px-4 py-2 text-sm font-medium text-slate-800 shadow-lg transition-all hover:border-slate-300 hover:bg-white"
+                className="absolute bottom-3 left-1/2 z-20 -translate-x-1/2 transform cursor-pointer rounded-full border border-slate-200 bg-white/95 px-4 py-2 text-sm font-medium text-slate-800 shadow-lg transition-all hover:border-slate-300 hover:bg-white"
                 aria-label="Edit book color"
               >
                 <Edit2 className="mr-1 inline h-4 w-4" />
