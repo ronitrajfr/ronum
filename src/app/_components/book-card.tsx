@@ -134,18 +134,19 @@ export function BookCard({
               )}
             </div>
 
-            <button
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                setIsModalOpen(true);
-              }}
-              className="absolute bottom-3 left-1/2 z-20 -translate-x-1/2 transform rounded-full border border-slate-200 bg-white/95 px-4 py-2 text-sm font-medium text-slate-800 shadow-lg transition-all hover:border-slate-300 hover:bg-white"
-              aria-label="Edit book color"
-            >
-              <Edit2 className="mr-1 inline h-4 w-4" />
-              Edit Color
-            </button>
+            {editable && (
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  setIsModalOpen(true);
+                }}
+                className="absolute bottom-3 left-1/2 z-20 -translate-x-1/2 transform rounded-full border border-slate-200 bg-white/95 px-4 py-2 text-sm font-medium text-slate-800 shadow-lg transition-all hover:border-slate-300 hover:bg-white"
+                aria-label="Edit book color"
+              >
+                <Edit2 className="mr-1 inline h-4 w-4" />
+                Edit Color
+              </button>
+            )}
           </div>
 
           {/* Drop shadow under the book */}

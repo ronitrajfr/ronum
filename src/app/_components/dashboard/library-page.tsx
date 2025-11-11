@@ -23,6 +23,7 @@ const Librarypage = ({ id }: { id: string }) => {
           name={category?.name}
           description={category?.description}
         />
+
         <LibraryMain data={data.paper} />
       </div>
     </div>

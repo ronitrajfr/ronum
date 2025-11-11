@@ -4,17 +4,27 @@ import type React from "react";
 import type { Paper } from "@/utils/types";
 import BookCard from "../book-card";
 import Link from "next/link";
-import { useState } from "react";
+import { api } from "@/trpc/react"; // Import TRPC API client
 
 interface LibraryMainProps {
   data: Paper[];
-  onColorChange?: (itemId: string, color: string) => void;
 }
 
-const LibraryMain: React.FC<LibraryMainProps> = ({
-  data = [],
-  onColorChange,
-}) => {
+const LibraryMain: React.FC<LibraryMainProps> = ({ data = [] }) => {
+  const updateColorMutation = api.paper.updatePaper.useMutation({
+    onSuccess: () => {
+      // Color updated successfully, no need to manually refetch
+      // The cache invalidation happens on the server side
+    },
+  });
+
+  const handleColorChange = (paperId: string, color: string) => {
+    updateColorMutation.mutate({
+      paperId,
+      colorScheme: color,
+    });
+  };
+
   return (
     <div>
       <div className="flex items-center gap-2">
@@ -25,14 +35,13 @@ const LibraryMain: React.FC<LibraryMainProps> = ({
         {data &&
           data.map((item) => (
             <div key={item.id} className="group relative">
-              <Link href={`/reader/${item.id}`}>
-                <BookCard
-                  paperColor={(item.colorScheme as string) || "#2563eb"}
-                  author={item.author}
-                  title={item.name}
-                  editable={true}
-                />
-              </Link>
+              <BookCard
+                paperColor={(item.colorScheme as string) || "#2563eb"}
+                author={item.author}
+                title={item.name}
+                editable={true}
+                onColorChange={(color) => handleColorChange(item.id, color)}
+              />
             </div>
           ))}
       </div>

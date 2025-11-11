@@ -40,7 +40,8 @@ export default function ColorPickerModal({
 }: ColorPickerModalProps) {
   const [customColor, setCustomColor] = useState(currentColor);
 
-  const handleApply = () => {
+  const handleApply = (e: React.MouseEvent) => {
+    e.stopPropagation();
     onColorSelect(customColor);
   };
 
@@ -60,7 +61,6 @@ export default function ColorPickerModal({
                 <button
                   key={color.value}
                   onClick={(e) => {
-                    e.stopPropagation();
                     setCustomColor(color.value);
                   }}
                   className={`aspect-square w-full rounded-lg border-2 transition-all ${
