@@ -4,10 +4,19 @@ import { api } from "@/trpc/react";
 import { PDFSkeleton } from "@/components/pdf-skeleton";
 import { useParams } from "next/navigation";
 import Notes from "@/components/notes";
+import { useState } from "react";
+import SummaryPage from "@/app/_components/summary-page";
+
+interface ConversationTurn {
+  user: string;
+  ai: string | null;
+}
 
 const ReaderView = () => {
   const params = useParams<{ id: string }>();
   const { id } = params;
+
+  const [conversation, setConversation] = useState<ConversationTurn[]>([]);
 
   const paperQuery = api.paper.getPaper.useQuery(
     { paperId: id || "" },
@@ -37,6 +46,7 @@ const ReaderView = () => {
           serverNotes={paperQuery.data.notes?.[0]?.content || ""}
           uuid={id}
         />
+        <SummaryPage />
       </div>
     </div>
   );

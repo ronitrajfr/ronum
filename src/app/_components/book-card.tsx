@@ -17,13 +17,10 @@ type BookCardProps = {
   editable?: boolean;
 } & React.HTMLAttributes<HTMLDivElement>;
 
-// Generate soft color gradient from user color to white
 const getSoftGradient = (color: string) => {
-  // If it's a hex color, convert to RGB and create gradient
   if (color.startsWith("#")) {
     return `linear-gradient(135deg, ${color}40 0%, ${color}20 50%, rgba(255,255,255,0.9) 100%)`;
   }
-  // Default gradient if color format not recognized
   return `linear-gradient(135deg, rgba(59, 130, 246, 0.3) 0%, rgba(59, 130, 246, 0.1) 50%, rgba(255,255,255,0.9) 100%)`;
 };
 

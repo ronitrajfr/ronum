@@ -17,7 +17,6 @@ import {
   AnnotationLayer,
   CurrentZoom,
   ZoomIn,
-  CustomLayer,
   SelectionTooltip,
 } from "@anaralabs/lector";
 import { PDFSkeleton } from "./pdf-skeleton";
@@ -33,10 +32,6 @@ import {
   SearchIcon,
   ZoomInIcon,
   ZoomOutIcon,
-  PencilIcon,
-  EraserIcon,
-  HighlighterIcon,
-  NotebookText,
 } from "lucide-react";
 
 GlobalWorkerOptions.workerSrc = new URL(
@@ -102,12 +97,41 @@ export default function PDFViewer({
             <ZoomInIcon size={15} />
           </ZoomIn>
           <PageNavigationButtons docId={docId} />
+          <AIButton />
         </div>
       </div>
       <HighlightLayerContent />
     </Root>
   );
 }
+
+const AIButton = () => {
+  const currentPage = usePdf((state) => state.currentPage);
+  const getPdfPageProxy = usePdf((state) => state.getPdfPageProxy);
+  return (
+    <button
+      className="text-semibold cursor-pointer rounded-lg bg-green-400 px-4 py-1 text-white transition hover:scale-105"
+      onClick={async () => {
+        console.log("Current Page:", currentPage);
+
+        const pageProxy = getPdfPageProxy(currentPage);
+        if (!pageProxy) {
+          console.error("Page not loaded yet");
+          return;
+        }
+
+        const textContent = await pageProxy.getTextContent();
+        const pageText = textContent.items
+          .map((item: any) => item.str)
+          .join(" ");
+
+        console.log("Page Text Content:", pageText);
+      }}
+    >
+      Ask AI
+    </button>
+  );
+};
 
 const PageNavigationButtons = ({ docId }: { docId: string }) => {
   const pages = usePdf((state) => state.pdfDocumentProxy?.numPages);
@@ -225,19 +249,11 @@ const HighlightLayerContent = () => {
   return (
     <Pages className="overflow-auto dark:brightness-[80%] dark:contrast-[228%] dark:hue-rotate-180 dark:invert-[94%]">
       <Page>
-        {/* {selectionDimensions && <CustomSelect onHighlight={handleHighlight} />} */}
         <CanvasLayer className="canvasLayer" />
         <TextLayer className="textLayer" />
         <HighlightLayer className="bg-yellow-200/70" />
+        <CustomSelect onHighlight={handleHighlight} />
         <AnnotationLayer className="annotationLayer" />
-
-        {/* <CustomLayer>
-          {(pageNumber) => (
-            <>
-              <AnnotationLayer pageNumber={pageNumber} />
-            </>
-          )}
-        </CustomLayer> */}
       </Page>
     </Pages>
   );
