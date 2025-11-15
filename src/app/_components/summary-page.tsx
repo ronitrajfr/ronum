@@ -9,14 +9,18 @@ export interface SummaryPageProps {
   pageContent?: string;
   pageNumber?: number;
   paperId?: string;
+  currentNotes?: any;
   onSummaryComplete?: () => void;
+  onNotesUpdated?: () => void;
 }
 
 export default function SummaryPage({
   pageContent,
   pageNumber,
   paperId,
+  currentNotes,
   onSummaryComplete,
+  onNotesUpdated,
 }: SummaryPageProps) {
   const [isStreaming, setIsStreaming] = useState(false);
   const [summary, setSummary] = useState("");
@@ -118,30 +122,48 @@ export default function SummaryPage({
     }
 
     try {
-      const newContent = {
-        type: "doc",
-        content: [
-          {
-            type: "heading",
-            attrs: { level: 2 },
-            content: [
-              {
-                type: "text",
-                text: `Page ${pageNumber} Summary`,
-              },
-            ],
-          },
-          {
-            type: "paragraph",
-            content: [
-              {
-                type: "text",
-                text: summary,
-              },
-            ],
-          },
-        ],
-      };
+      let existingContent = currentNotes;
+      if (typeof existingContent === "string") {
+        try {
+          existingContent = JSON.parse(existingContent);
+        } catch {
+          existingContent = null;
+        }
+      }
+
+      // Create the new summary content
+      const summaryContent = [
+        {
+          type: "heading",
+          attrs: { level: 2 },
+          content: [
+            {
+              type: "text",
+              text: `Page ${pageNumber} Summary`,
+            },
+          ],
+        },
+        {
+          type: "paragraph",
+          content: [
+            {
+              type: "text",
+              text: summary,
+            },
+          ],
+        },
+      ];
+
+      // Merge with existing content or create new document
+      const newContent = existingContent?.content
+        ? {
+            type: "doc",
+            content: [...(existingContent.content || []), ...summaryContent],
+          }
+        : {
+            type: "doc",
+            content: summaryContent,
+          };
 
       await upsertNoteMutation.mutateAsync({
         paperId,
@@ -151,6 +173,7 @@ export default function SummaryPage({
       toast.success("Summary added to notes");
       setSummary("");
       setHasCompleted(false);
+      onNotesUpdated?.();
     } catch (error) {
       console.error(" Error adding summary to notes:", error);
       toast.error("Failed to add summary to notes");

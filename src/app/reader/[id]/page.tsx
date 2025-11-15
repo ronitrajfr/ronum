@@ -25,6 +25,10 @@ const ReaderView = () => {
     { enabled: !!id },
   );
 
+  const handleNotesUpdated = () => {
+    paperQuery.refetch();
+  };
+
   if (!id) return <p>No PDF provided.</p>;
 
   if (paperQuery.isLoading)
@@ -56,6 +60,8 @@ const ReaderView = () => {
           pageContent={pageContent}
           pageNumber={pageNumber}
           paperId={id}
+          currentNotes={paperQuery.data.notes?.[0]?.content}
+          onNotesUpdated={handleNotesUpdated}
         />
       </div>
     </div>
