@@ -89,6 +89,12 @@ export default function Notes({ serverNotes, uuid }: NotesProps) {
   });
 
   useEffect(() => {
+    if (editor && parsedServerNotes) {
+      editor.commands.setContent(parsedServerNotes); // <-- Updates editor when serverNotes changes
+    }
+  }, [serverNotes, editor]); // <-- Re-runs when serverNotes prop changes
+
+  useEffect(() => {
     setIsClient(true);
   }, []);
 
