@@ -17,6 +17,8 @@ const ReaderView = () => {
   const { id } = params;
 
   const [conversation, setConversation] = useState<ConversationTurn[]>([]);
+  const [pageContent, setPageContent] = useState("");
+  const [pageNumber, setPageNumber] = useState(1);
 
   const paperQuery = api.paper.getPaper.useQuery(
     { paperId: id || "" },
@@ -40,13 +42,21 @@ const ReaderView = () => {
         docId={id}
         url={decodeURIComponent(paperQuery.data.url)}
         colorScheme="#000000"
+        onPageContentChange={(content, page) => {
+          setPageContent(content);
+          setPageNumber(page);
+        }}
       />
       <div className="h-screen w-full border-l p-2">
         <Notes
           serverNotes={paperQuery.data.notes?.[0]?.content || ""}
           uuid={id}
         />
-        <SummaryPage />
+        <SummaryPage
+          pageContent={pageContent}
+          pageNumber={pageNumber}
+          paperId={id}
+        />
       </div>
     </div>
   );

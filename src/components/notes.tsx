@@ -112,7 +112,7 @@ export default function Notes({ serverNotes, uuid }: NotesProps) {
       });
       toast.success("Notes saved successfully");
     } catch (err) {
-      console.error("[v0] Error saving notes:", err);
+      console.error(" Error saving notes:", err);
       toast.error("Couldn't save notes");
     } finally {
       setSaving(false);
@@ -200,7 +200,7 @@ function MenuBar({ editor, saveNotesFunc, saving }: MenuBarProps) {
       <button
         onClick={() => {
           const result = editor.chain().focus().toggleBold().run();
-          console.log("[v0] Bold command result:", result);
+          console.log(" Bold command result:", result);
         }}
         className={
           editor.isActive("bold")
@@ -244,7 +244,7 @@ function MenuBar({ editor, saveNotesFunc, saving }: MenuBarProps) {
             .toggleHeading({ level: 1 })
             .run();
           console.log(
-            "[v0] H1 command result:",
+            " H1 command result:",
             result,
             "Editor state:",
             editor.isActive("heading", { level: 1 }),
@@ -267,7 +267,7 @@ function MenuBar({ editor, saveNotesFunc, saving }: MenuBarProps) {
             .focus()
             .toggleHeading({ level: 2 })
             .run();
-          console.log("[v0] H2 command result:", result);
+          console.log(" H2 command result:", result);
         }}
         className={
           editor.isActive("heading", { level: 2 })
@@ -286,7 +286,7 @@ function MenuBar({ editor, saveNotesFunc, saving }: MenuBarProps) {
             .focus()
             .toggleHeading({ level: 3 })
             .run();
-          console.log("[v0] H3 command result:", result);
+          console.log(" H3 command result:", result);
         }}
         className={
           editor.isActive("heading", { level: 3 })

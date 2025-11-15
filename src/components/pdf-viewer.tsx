@@ -24,7 +24,7 @@ import "pdfjs-dist/web/pdf_viewer.css";
 import { Button } from "./ui/button";
 
 import { useDebounce } from "use-debounce";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, createContext } from "react";
 import { Input } from "./ui/input";
 import {
   ChevronLeftIcon,
@@ -39,75 +39,107 @@ GlobalWorkerOptions.workerSrc = new URL(
   import.meta.url,
 ).toString();
 
+interface PDFViewerContextType {
+  pageContent: string;
+  pageNumber: number;
+  onAskAI: () => void;
+}
+
+export const PDFViewerContext = createContext<PDFViewerContextType | null>(
+  null,
+);
+
 export default function PDFViewer({
   url,
   colorScheme,
   docId,
+  onPageContentChange,
 }: {
   url: string;
   colorScheme?: string;
   docId: string;
+  onPageContentChange?: (content: string, pageNumber: number) => void;
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [pageContent, setPageContent] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
 
   return (
-    <Root
-      source={url}
-      className="h-[calc(100vh-40px)] w-full"
-      loader={
-        <div className="p-4">
-          <PDFSkeleton />
-        </div>
-      }
-      zoomOptions={{
-        minZoom: 0.5,
-        maxZoom: 5,
-      }}
-      isZoomFitWidth
+    <PDFViewerContext.Provider
+      value={{ pageContent, pageNumber: currentPage, onAskAI: () => {} }}
     >
-      <div
-        className={`bg-[${colorScheme}] absolute top-[40px] z-10 h-[calc(100vh-40px)] transform p-2 transition-all duration-300 ease-in-out ${
-          sidebarOpen
-            ? "visible translate-x-0 opacity-100"
-            : "invisible -translate-x-full opacity-0"
-        } flex flex-col`}
+      <Root
+        source={url}
+        className="h-[calc(100vh-40px)] w-full"
+        loader={
+          <div className="p-4">
+            <PDFSkeleton />
+          </div>
+        }
+        zoomOptions={{
+          minZoom: 0.5,
+          maxZoom: 5,
+        }}
+        isZoomFitWidth
       >
-        <Search>
-          <SearchUI />
-        </Search>
-      </div>
-
-      <div className="flex h-[40px] items-center justify-center gap-1 border-b p-1 text-sm">
-        {/* <AnnotationToolbar /> */}
-        <Button
-          className=""
-          variant={"ghost"}
-          onClick={() => {
-            setSidebarOpen(!sidebarOpen);
-          }}
+        <div
+          className={`bg-[${colorScheme}] absolute top-[40px] z-10 h-[calc(100vh-40px)] transform p-2 transition-all duration-300 ease-in-out ${
+            sidebarOpen
+              ? "visible translate-x-0 opacity-100"
+              : "invisible -translate-x-full opacity-0"
+          } flex flex-col`}
         >
-          <SearchIcon size={16} />
-        </Button>
-        <div className="flex flex-row items-center justify-center gap-0.5">
-          <ZoomOut className="cursor-pointer px-3 py-1">
-            <ZoomOutIcon size={15} />
-          </ZoomOut>
-          <CurrentZoom className="w-16 rounded-full border px-3 py-1 text-center" />
-          <ZoomIn className="cursor-pointer px-3 py-1">
-            <ZoomInIcon size={15} />
-          </ZoomIn>
-          <PageNavigationButtons docId={docId} />
-          <AIButton />
+          <Search>
+            <SearchUI />
+          </Search>
         </div>
-      </div>
-      <HighlightLayerContent />
-    </Root>
+
+        <div className="flex h-[40px] items-center justify-center gap-1 border-b p-1 text-sm">
+          {/* <AnnotationToolbar /> */}
+          <Button
+            className=""
+            variant={"ghost"}
+            onClick={() => {
+              setSidebarOpen(!sidebarOpen);
+            }}
+          >
+            <SearchIcon size={16} />
+          </Button>
+          <div className="flex flex-row items-center justify-center gap-0.5">
+            <ZoomOut className="cursor-pointer px-3 py-1">
+              <ZoomOutIcon size={15} />
+            </ZoomOut>
+            <CurrentZoom className="w-16 rounded-full border px-3 py-1 text-center" />
+            <ZoomIn className="cursor-pointer px-3 py-1">
+              <ZoomInIcon size={15} />
+            </ZoomIn>
+            <PageNavigationButtons
+              docId={docId}
+              onPageChange={setCurrentPage}
+            />
+            <AIButton
+              onPageContent={(content, pageNum) => {
+                setPageContent(content);
+                setCurrentPage(pageNum);
+                onPageContentChange?.(content, pageNum);
+              }}
+            />
+          </div>
+        </div>
+        <HighlightLayerContent />
+      </Root>
+    </PDFViewerContext.Provider>
   );
 }
 
-const AIButton = () => {
+const AIButton = ({
+  onPageContent,
+}: {
+  onPageContent: (content: string, pageNum: number) => void;
+}) => {
   const currentPage = usePdf((state) => state.currentPage);
   const getPdfPageProxy = usePdf((state) => state.getPdfPageProxy);
+
   return (
     <button
       className="text-semibold cursor-pointer rounded-lg bg-green-400 px-4 py-1 text-white transition hover:scale-105"
@@ -126,6 +158,8 @@ const AIButton = () => {
           .join(" ");
 
         console.log("Page Text Content:", pageText);
+
+        onPageContent(pageText, currentPage);
       }}
     >
       Ask AI
@@ -133,7 +167,13 @@ const AIButton = () => {
   );
 };
 
-const PageNavigationButtons = ({ docId }: { docId: string }) => {
+const PageNavigationButtons = ({
+  docId,
+  onPageChange,
+}: {
+  docId: string;
+  onPageChange?: (page: number) => void;
+}) => {
   const pages = usePdf((state) => state.pdfDocumentProxy?.numPages);
   const currentPage = usePdf((state) => state.currentPage);
   console.log(currentPage);
@@ -178,7 +218,8 @@ const PageNavigationButtons = ({ docId }: { docId: string }) => {
 
   useEffect(() => {
     setPageNumber(currentPage);
-  }, [currentPage]);
+    onPageChange?.(currentPage);
+  }, [currentPage, onPageChange]);
 
   return (
     <div className="flex items-center gap-1">
@@ -231,8 +272,6 @@ const PageNavigationButtons = ({ docId }: { docId: string }) => {
     </div>
   );
 };
-
-//Highligt
 
 const HighlightLayerContent = () => {
   const selectionDimensions = useSelectionDimensions();
