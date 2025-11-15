@@ -37,6 +37,9 @@ export default function SummaryPage({
     setHasCompleted(false);
 
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 55000); // 55 second timeout
+
       const response = await fetch("/api/summarize", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -44,10 +47,16 @@ export default function SummaryPage({
           pageContent,
           pageNumber: pageNumber || 1,
         }),
+        signal: controller.signal,
       });
 
+      clearTimeout(timeoutId);
+
       if (!response.ok) {
-        throw new Error("Failed to summarize");
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(
+          errorData.details || `HTTP ${response.status}: Failed to summarize`,
+        );
       }
 
       const reader = response.body?.getReader();
@@ -58,6 +67,7 @@ export default function SummaryPage({
       streamRef.current = reader;
       const decoder = new TextDecoder();
       let buffer = "";
+      let chunkCount = 0;
 
       while (true) {
         const { done, value } = await reader.read();
@@ -65,6 +75,9 @@ export default function SummaryPage({
 
         const chunk = decoder.decode(value, { stream: true });
         buffer += chunk;
+        chunkCount++;
+
+        console.log(`[v0] Stream chunk ${chunkCount}: ${chunk.length} chars`);
 
         setSummary((prev) => prev + chunk);
       }
@@ -75,11 +88,22 @@ export default function SummaryPage({
         setSummary((prev) => prev + final);
       }
 
+      console.log(
+        `[v0] Streaming complete: ${chunkCount} chunks, total length: ${summary.length}`,
+      );
+
       setHasCompleted(true);
       onSummaryComplete?.();
     } catch (error) {
-      console.error(" Error streaming summary:", error);
-      toast.error("Failed to generate summary");
+      const errorMsg = error instanceof Error ? error.message : "Unknown error";
+      console.error("[v0] Error streaming summary:", errorMsg);
+
+      if (errorMsg.includes("abort")) {
+        toast.error("Request timed out. Try a different page.");
+      } else {
+        toast.error(`Failed to generate summary: ${errorMsg}`);
+      }
+
       setHasCompleted(true);
     } finally {
       setIsStreaming(false);
@@ -94,7 +118,6 @@ export default function SummaryPage({
     }
 
     try {
-      // Create a new paragraph with the summary
       const newContent = {
         type: "doc",
         content: [
