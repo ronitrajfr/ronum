@@ -29,8 +29,6 @@ export function Sidebar() {
     isError,
   } = api.category.getAllCategory.useQuery();
 
-  console.log("Is fetching:", isFetching);
-
   const createCategory = api.category.create.useMutation({
     onSuccess: async (data) => {
       await utils.category.invalidate();

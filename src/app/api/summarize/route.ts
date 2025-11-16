@@ -30,7 +30,7 @@ export async function POST(req: Request) {
     const truncated = truncateContent(sanitized);
 
     console.log(
-      `[v0] Summarizing page ${pageNumber}: ${sanitized.length} chars (truncated to ${truncated.length})`,
+      `ERROR: Summarizing page ${pageNumber}: ${sanitized.length} chars (truncated to ${truncated.length})`,
     );
 
     const result = streamText({
@@ -42,7 +42,7 @@ export async function POST(req: Request) {
 
     return result.toTextStreamResponse();
   } catch (error) {
-    console.error("[v0] Summarize API error:", error);
+    console.error("ERROR: Summarize API error:", error);
 
     const errorMessage =
       error instanceof Error ? error.message : "Unknown error occurred";

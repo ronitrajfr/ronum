@@ -206,7 +206,6 @@ function MenuBar({ editor, saveNotesFunc, saving }: MenuBarProps) {
       <button
         onClick={() => {
           const result = editor.chain().focus().toggleBold().run();
-          console.log(" Bold command result:", result);
         }}
         className={
           editor.isActive("bold")
@@ -249,12 +248,6 @@ function MenuBar({ editor, saveNotesFunc, saving }: MenuBarProps) {
             .focus()
             .toggleHeading({ level: 1 })
             .run();
-          console.log(
-            " H1 command result:",
-            result,
-            "Editor state:",
-            editor.isActive("heading", { level: 1 }),
-          );
         }}
         className={
           editor.isActive("heading", { level: 1 })
@@ -273,7 +266,6 @@ function MenuBar({ editor, saveNotesFunc, saving }: MenuBarProps) {
             .focus()
             .toggleHeading({ level: 2 })
             .run();
-          console.log(" H2 command result:", result);
         }}
         className={
           editor.isActive("heading", { level: 2 })
@@ -292,7 +284,6 @@ function MenuBar({ editor, saveNotesFunc, saving }: MenuBarProps) {
             .focus()
             .toggleHeading({ level: 3 })
             .run();
-          console.log(" H3 command result:", result);
         }}
         className={
           editor.isActive("heading", { level: 3 })

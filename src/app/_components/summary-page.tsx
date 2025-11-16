@@ -81,8 +81,6 @@ export default function SummaryPage({
         buffer += chunk;
         chunkCount++;
 
-        console.log(`[v0] Stream chunk ${chunkCount}: ${chunk.length} chars`);
-
         setSummary((prev) => prev + chunk);
       }
 
@@ -92,15 +90,11 @@ export default function SummaryPage({
         setSummary((prev) => prev + final);
       }
 
-      console.log(
-        `[v0] Streaming complete: ${chunkCount} chunks, total length: ${summary.length}`,
-      );
-
       setHasCompleted(true);
       onSummaryComplete?.();
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : "Unknown error";
-      console.error("[v0] Error streaming summary:", errorMsg);
+      console.error("ERROR: Error streaming summary:", errorMsg);
 
       if (errorMsg.includes("abort")) {
         toast.error("Request timed out. Try a different page.");

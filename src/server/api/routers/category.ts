@@ -146,7 +146,7 @@ export const categoryRouter = createTRPCRouter({
         // 1️⃣ Try loading from Redis
         const cachedData = await redis.get(cachedKey);
         if (cachedData) {
-          console.log("✅ Loaded category from cache");
+          console.log("Loaded category from cache");
           try {
             return JSON.parse(cachedData as string);
           } catch (err) {
@@ -155,7 +155,7 @@ export const categoryRouter = createTRPCRouter({
           }
         }
 
-        console.log("⚡ No cache, fetching from DB");
+        console.log(" No cache, fetching from DB");
 
         // 2️⃣ Fetch from DB
         const categoryInfo = await ctx.db.category.findFirst({

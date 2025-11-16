@@ -144,8 +144,6 @@ const AIButton = ({
     <button
       className="text-semibold cursor-pointer rounded-lg bg-green-400 px-4 py-1 text-white transition hover:scale-105"
       onClick={async () => {
-        console.log("Current Page:", currentPage);
-
         const pageProxy = getPdfPageProxy(currentPage);
         if (!pageProxy) {
           console.error("Page not loaded yet");
@@ -156,8 +154,6 @@ const AIButton = ({
         const pageText = textContent.items
           .map((item: any) => item.str)
           .join(" ");
-
-        console.log("Page Text Content:", pageText);
 
         onPageContent(pageText, currentPage);
       }}
@@ -176,7 +172,7 @@ const PageNavigationButtons = ({
 }) => {
   const pages = usePdf((state) => state.pdfDocumentProxy?.numPages);
   const currentPage = usePdf((state) => state.currentPage);
-  console.log(currentPage);
+  // console.log(currentPage);
   const [pageNumber, setPageNumber] = useState<number | string>(currentPage);
   const { jumpToPage } = usePdfJump();
 
