@@ -7,6 +7,7 @@ import { toast } from "sonner";
 
 export interface SummaryPageProps {
   pageContent?: string;
+  selectedText?: string;
   pageNumber?: number;
   paperId?: string;
   currentNotes?: any;
@@ -16,6 +17,7 @@ export interface SummaryPageProps {
 
 export default function SummaryPage({
   pageContent,
+  selectedText,
   pageNumber,
   paperId,
   currentNotes,
@@ -25,20 +27,25 @@ export default function SummaryPage({
   const [isStreaming, setIsStreaming] = useState(false);
   const [summary, setSummary] = useState("");
   const [hasCompleted, setHasCompleted] = useState(false);
+  const [isSelectedTextSummary, setIsSelectedTextSummary] = useState(false);
   const streamRef = useRef<ReadableStreamDefaultReader<Uint8Array> | null>(
     null,
   );
   const upsertNoteMutation = api.paper.upsertNote.useMutation();
 
+  const contentToSummarize = selectedText || pageContent;
+  const summaryType = selectedText ? "selected text" : `page ${pageNumber}`;
+
   const handleStreamSummary = async () => {
-    if (!pageContent || !paperId) {
-      toast.error("Missing page content or paper ID");
+    if (!contentToSummarize || !paperId) {
+      toast.error("Missing content or paper ID");
       return;
     }
 
     setIsStreaming(true);
     setSummary("");
     setHasCompleted(false);
+    setIsSelectedTextSummary(!!selectedText);
 
     try {
       const controller = new AbortController();
@@ -48,7 +55,7 @@ export default function SummaryPage({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          pageContent,
+          pageContent: contentToSummarize,
           pageNumber: pageNumber || 1,
         }),
         signal: controller.signal,
@@ -125,7 +132,6 @@ export default function SummaryPage({
         }
       }
 
-      // Create the new summary content
       const summaryContent = [
         {
           type: "heading",
@@ -133,7 +139,9 @@ export default function SummaryPage({
           content: [
             {
               type: "text",
-              text: `Page ${pageNumber} Summary`,
+              text: isSelectedTextSummary
+                ? "Selected Text Summary"
+                : `Page ${pageNumber} Summary`,
             },
           ],
         },
@@ -167,6 +175,7 @@ export default function SummaryPage({
       toast.success("Summary added to notes");
       setSummary("");
       setHasCompleted(false);
+      setIsSelectedTextSummary(false);
       onNotesUpdated?.();
     } catch (error) {
       console.error(" Error adding summary to notes:", error);
@@ -182,7 +191,7 @@ export default function SummaryPage({
         {/* Show query when streaming or has content */}
         {(isStreaming || summary) && (
           <p className="text-muted-foreground text-sm">
-            Summarize page {pageNumber || "N/A"}
+            Summarize {summaryType}
           </p>
         )}
 
@@ -200,7 +209,8 @@ export default function SummaryPage({
         {/* Empty state */}
         {!isStreaming && !summary && (
           <p className="text-muted-foreground text-sm">
-            Click "Ask AI" from the PDF viewer to generate a summary
+            Select text and click "Summarize" or click "Ask AI" from the PDF
+            viewer to generate a summary
           </p>
         )}
 
@@ -208,7 +218,7 @@ export default function SummaryPage({
         <div className="flex gap-2">
           <Button
             onClick={handleStreamSummary}
-            disabled={isStreaming || !pageContent}
+            disabled={isStreaming || !contentToSummarize}
             className="flex-1"
             variant="default"
           >

@@ -54,11 +54,13 @@ export default function PDFViewer({
   colorScheme,
   docId,
   onPageContentChange,
+  onSelectedTextChange,
 }: {
   url: string;
   colorScheme?: string;
   docId: string;
   onPageContentChange?: (content: string, pageNumber: number) => void;
+  onSelectedTextChange?: (text: string, pageNumber: number) => void;
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [pageContent, setPageContent] = useState("");
@@ -126,7 +128,7 @@ export default function PDFViewer({
             />
           </div>
         </div>
-        <HighlightLayerContent />
+        <HighlightLayerContent onSelectedTextChange={onSelectedTextChange} />
       </Root>
     </PDFViewerContext.Provider>
   );
@@ -269,9 +271,14 @@ const PageNavigationButtons = ({
   );
 };
 
-const HighlightLayerContent = () => {
+const HighlightLayerContent = ({
+  onSelectedTextChange,
+}: {
+  onSelectedTextChange?: (text: string, pageNumber: number) => void;
+}) => {
   const selectionDimensions = useSelectionDimensions();
   const setHighlights = usePdf((state) => state.setHighlight);
+  const currentPage = usePdf((state) => state.currentPage);
 
   const handleHighlight = () => {
     const dimension = selectionDimensions.getDimension();
@@ -281,25 +288,56 @@ const HighlightLayerContent = () => {
     }
   };
 
+  const getSelectedText = () => {
+    const dimension = selectionDimensions.getDimension();
+    if (dimension && !dimension.isCollapsed) {
+      const selectedText = dimension.text || "";
+      return selectedText;
+    }
+    return "";
+  };
+
   return (
     <Pages className="overflow-auto dark:brightness-[80%] dark:contrast-[228%] dark:hue-rotate-180 dark:invert-[94%]">
       <Page>
         <CanvasLayer className="canvasLayer" />
         <TextLayer className="textLayer" />
         <HighlightLayer className="bg-yellow-200/70" />
-        <CustomSelect onHighlight={handleHighlight} />
+        <CustomSelect
+          onHighlight={handleHighlight}
+          onSummarize={() => {
+            const selectedText = getSelectedText();
+            if (selectedText) {
+              onSelectedTextChange?.(selectedText, currentPage);
+            }
+          }}
+        />
         <AnnotationLayer className="annotationLayer" />
       </Page>
     </Pages>
   );
 };
 
-function CustomSelect({ onHighlight }: { onHighlight: () => void }) {
+function CustomSelect({
+  onHighlight,
+  onSummarize,
+}: {
+  onHighlight: () => void;
+  onSummarize: () => void;
+}) {
   return (
     <SelectionTooltip>
-      <Button className="w-fit rounded-md px-3 py-1" onClick={onHighlight}>
-        Highlight
-      </Button>
+      <div className="flex gap-2">
+        <Button className="w-fit rounded-md px-3 py-1" onClick={onHighlight}>
+          Highlight
+        </Button>
+        <Button
+          className="w-fit rounded-md bg-blue-500 px-3 py-1 hover:bg-blue-600"
+          onClick={onSummarize}
+        >
+          Summarize
+        </Button>
+      </div>
     </SelectionTooltip>
   );
 }

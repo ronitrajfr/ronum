@@ -19,6 +19,7 @@ const ReaderView = () => {
   const [conversation, setConversation] = useState<ConversationTurn[]>([]);
   const [pageContent, setPageContent] = useState("");
   const [pageNumber, setPageNumber] = useState(1);
+  const [selectedText, setSelectedText] = useState("");
 
   const paperQuery = api.paper.getPaper.useQuery(
     { paperId: id || "" },
@@ -50,6 +51,10 @@ const ReaderView = () => {
           setPageContent(content);
           setPageNumber(page);
         }}
+        onSelectedTextChange={(text, page) => {
+          setSelectedText(text);
+          setPageNumber(page);
+        }}
       />
       <div className="h-screen w-full border-l p-2">
         <Notes
@@ -59,6 +64,7 @@ const ReaderView = () => {
         <SummaryPage
           pageContent={pageContent}
           pageNumber={pageNumber}
+          selectedText={selectedText}
           paperId={id}
           currentNotes={paperQuery.data.notes?.[0]?.content}
           onNotesUpdated={handleNotesUpdated}
