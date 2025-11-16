@@ -58,20 +58,8 @@ export function Sidebar() {
 
   return (
     <aside className="flex h-full w-64 flex-col border-r-2 border-stone-300 p-4">
-      {/* ---------- Static menu ---------- */}
-      <nav className="space-y-3">
-        {["Recent", "Reading list", "Discover"].map((item) => (
-          <button
-            key={item}
-            className="block w-full text-left text-sm font-medium text-stone-600 hover:text-stone-800"
-          >
-            {item}
-          </button>
-        ))}
-      </nav>
-
       {/* ---------- My Library ---------- */}
-      <section className="mt-6 space-y-3">
+      <section className="mt-2 space-y-3">
         <div className="text-sm font-bold text-stone-600">My Library</div>
 
         {/* Loading/Error States */}

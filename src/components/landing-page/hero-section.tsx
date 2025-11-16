@@ -20,14 +20,9 @@ type ProductTeaserCardProps = {
 
 export const HeroSection = (props: ProductTeaserCardProps) => {
   const {
-    dailyVolume = "1,430,992,688",
-    dailyVolumeLabel = "AI SUMMARIZED PDF",
     headline = "Enhance your reading experience with Ronum",
     subheadline = "Upload your PDFs, get instant AI summaries, make notes, and actually understand what you’re reading. Everything you need to learn faster, all in one place.",
-    videoSrc = "https://cdn.sanity.io/files/1t8iva7t/production/a2cbbed7c998cf93e7ecb6dae75bab42b13139c2.mp4",
-    posterSrc = "/images/design-mode/9ad78a5534a46e77bafe116ce1c38172c60dc21a-1069x1068.png",
     primaryButtonText = "Get Started",
-    primaryButtonHref = "",
     secondaryButtonText = "View Code",
     secondaryButtonHref = "https://github.com/ronitrajfr/ronum",
   } = props;
